@@ -1,0 +1,8 @@
+x64/*
+WindowsCommunication/x64/*
+WindowsCommunication/Debug/*
+Debug/*
+*.VC.db
+*.VC.VC.opendb
+.vs/*
+*.exe
