@@ -23,6 +23,27 @@
 #include <D3DX10.h>
 #include <xnamath.h>
 
+// Direct input
+#include <dinput.h>
+#include <dbt.h>
+#pragma comment(lib, "dinput8")
+#pragma comment(lib, "dxguid")
+
+///////////////**************DirectInput**************////////////////////
+
+LPDIRECTINPUT8 din;
+LPDIRECTINPUTDEVICE8 dinkbd;
+BYTE keystate[256];
+DIDATAFORMAT dfi;
+
+void init_dinput(HINSTANCE hInst, HWND hWnd);
+void detect_input(void);
+void clean_dinput(void);
+void print_state();
+
+///////////////**************DirectInput**************////////////////////
+
+
 ///////////////**************DirectX11**************////////////////////
 //Global Declarations - Interfaces//
 IDXGISwapChain* SwapChain;
@@ -86,7 +107,7 @@ static TCHAR szWindowClass2[] = _T("win32app2");
 
 
 // The string that appears in the application's title bar.  
-static TCHAR szTitle1[] = _T("Win32 Guided Tour Application 1");
+static TCHAR szTitle1[] = _T("Window 1");
 static TCHAR szTitle2[] = _T("Win32 Guided Tour Application 2");
 
 HINSTANCE hInst1;
@@ -380,6 +401,17 @@ LRESULT CALLBACK WndProc2(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	HDC hdc;
 	TCHAR greeting[] = _T("Hello, World! 2");
 
+	if (dinkbd != nullptr)
+	{
+		detect_input();
+		print_state();
+	}
+	if (!SetForegroundWindow(hwnd1))
+	{
+		//MessageBox(NULL, L"Can not SetForegroundWindow",
+		//	L"Error", MB_OK | MB_ICONERROR);
+	}
+
 	switch (message)
 	{
 	case WM_PAINT:
@@ -457,7 +489,7 @@ bool InitializeWindow1(HINSTANCE hInstance,
 	hwnd = CreateWindowEx(
 		NULL,
 		WndClassName,
-		L"Lesson 4 - Begin Drawing",
+		L"Window 2",
 		//WS_CHILD | WS_VISIBLE
 		//| WS_MINIMIZEBOX | WS_MAXIMIZEBOX,
 		WS_OVERLAPPEDWINDOW,
@@ -478,6 +510,33 @@ bool InitializeWindow1(HINSTANCE hInstance,
 
 	ShowWindow(hwnd, ShowWnd);
 	UpdateWindow(hwnd);
+
+	// Hide main window
+	ShowWindow(hwnd1, 0);
+
+	// Try to attach input
+	//DWORD MainWindowThread = GetWindowThreadProcessId(hwnd1, NULL);
+	//DWORD ChildWindowThread = GetCurrentThreadId();
+	//std::cout << "MainWindowThread " << MainWindowThread << std::endl;
+	//std::cout << "ChildWindowThread " << ChildWindowThread << std::endl;
+
+	//::AttachThreadInput(MainWindowThread, ChildWindowThread, TRUE);
+	//::SetWindowPos(hwnd1, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	//::SetWindowPos(hwnd1, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	//::SetForegroundWindow(hwnd1);
+	//::AttachThreadInput(MainWindowThread, ChildWindowThread, FALSE);
+	//::SetFocus(hwnd1);
+	//::SetActiveWindow(hwnd1);
+
+	// Try to run direct input emulation
+	//init_dinput(hInstance, hwnd1);
+
+	//if (!AttachThreadInput(MainWindowThread, ChildWindowThread, true))
+	//{
+	//	MessageBox(NULL, L"Can not attach input event",
+	//		L"Error", MB_OK | MB_ICONERROR);
+	//}
+
 
 	return true;
 }
@@ -661,3 +720,49 @@ int messageloopwindow2() {
 
 
 ///////////////**************DirectX11**************////////////////////
+
+///////////////**************DirectInput**************////////////////////
+
+void init_dinput(HINSTANCE hInst, HWND hWnd)
+{
+	HRESULT hr;
+	hr = DirectInput8Create(hInst, DIRECTINPUT_VERSION, IID_IDirectInput8, (void **)&din, NULL);
+	hr = din->CreateDevice(GUID_SysKeyboard, &dinkbd, NULL);
+	hr = dinkbd->SetDataFormat(&c_dfDIKeyboard);
+	// share the keybdb and collect even when not the active application
+	hr = dinkbd->SetCooperativeLevel(hWnd, DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
+}
+
+void detect_input(void)
+{
+	dinkbd->Acquire();
+	dinkbd->GetDeviceState(256, keystate);
+}
+
+void clean_dinput(void)
+{
+	dinkbd->Unacquire();
+	din->Release();
+}
+
+void print_state()
+{
+	WCHAR pState[4096] = L"";
+	WCHAR temp[32];
+
+	for (int i = 0; i < 256; i++)
+	{
+		if (keystate[i] != 0)
+		{
+			wsprintf(temp, L"%d(%d) ", i, keystate[i]);
+			lstrcat(pState, temp);
+		}
+	}
+	if (lstrlen(pState) != 0)
+	{
+		lstrcat(pState, L"\n");
+		OutputDebugString(pState);
+	}
+}
+
+///////////////**************DirectInput**************////////////////////
